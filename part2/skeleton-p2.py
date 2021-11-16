@@ -216,22 +216,22 @@ def epsilon_experiment(dataset, n: int, eps_values: list):
         total_average_error = sum(error_list) / len(error_list)
 
         total_errors.append(total_average_error)
-    return []
+    return total_errors
 
 
 # FUNCTIONS FOR LAPLACE END #
 # FUNCTIONS FOR EXPONENTIAL START #
 
 
-# TODO: Implement this function!
 def extract(dataset):
     """
         Extracts the first 1000 sequences and truncates them to n=1
     """
-    pass
+    extracted = dataset[0:1000]
+    truncated_dataset = truncate(extracted, 1)
+    return truncated_dataset
 
 
-# TODO: Implement this function!
 def most_visited_exponential(smaller_dataset, epsilon):
     """
         Using the Exponential mechanism, calculates private response for query: 
@@ -239,10 +239,28 @@ def most_visited_exponential(smaller_dataset, epsilon):
 
         Returns 1 for frontpage, 2 for news, 3 for tech, etc.
     """
-    pass
+    sensitivity = 1
+
+    score = Counter()
+    for row in smaller_dataset:
+        for element in row:
+            score[element] += 1
+
+    probabilities = {}
+    #
+    denominator = 0.0
+
+    for item in score.items():
+        denominator += np.exp(epsilon * item[1] / 2 * sensitivity)
+    for item in score.items():
+        numerator = np.exp(epsilon * item[1] / 2 * sensitivity)
+        probabilities[item[0]] = numerator / denominator
+    choice = random.choices(list(probabilities.keys()),list(probabilities.values()))[0]
+
+    return choice
 
 
-# TODO: Implement this function!
+
 def exponential_experiment(dataset, eps_values: list):
     """
         Function for the experiment explained in part (i).
@@ -250,7 +268,25 @@ def exponential_experiment(dataset, eps_values: list):
         Returns the list of accuracy results [0.51, 0.78, ...] where 0.51 is the accuracy when eps = 0.001,
         0.78 is the accuracy when eps = 0.005, and so forth.
     """
-    return []
+    score = Counter()
+    for row in dataset:
+        for element in row:
+            score[element] += 1
+    correct_answer = score.most_common()[0][0]
+    total_errors = []
+
+    for epsilon in eps_values:
+        correct_counter = 0
+        for _ in range(1000):
+            choice = most_visited_exponential(dataset, epsilon)
+            # error_list.append(choice)
+            # error_list.append(av_error)
+            if choice == correct_answer:
+                correct_counter += 1
+
+        percentage = correct_counter / 1000.0
+        total_errors.append(percentage)
+    return total_errors
 
 
 # FUNCTIONS TO IMPLEMENT END #
@@ -271,31 +307,34 @@ def main():
     av_error = calculate_average_error(non_private_histogram, dp_histogram)
     print("Average error:", av_error)
 
-    print("**** N EXPERIMENT RESULTS (f of Part 2) ****")
-    eps = 0.01
-    n_values = []
-    for i in range(1, 106, 5):
-       n_values.append(i)
-    errors = n_experiment(dataset, n_values, eps)
-    for i in range(len(n_values)):
-       print("n = ", n_values[i], " error = ", errors[i])
-
-    print("*" * 50)
-
+    # print("**** N EXPERIMENT RESULTS (f of Part 2) ****")
+    # eps = 0.01
+    # n_values = []
+    # for i in range(1, 106, 5):
+    #    n_values.append(i)
+    # errors = n_experiment(dataset, n_values, eps)
+    # for i in range(len(n_values)):
+    #    print("n = ", n_values[i], " error = ", errors[i])
+    #
+    # print("*" * 50)
+    #
     # print("**** EPSILON EXPERIMENT RESULTS (g of Part 2) ****")
     # n = 50
     # eps_values = [0.0001, 0.001, 0.005, 0.01, 0.05, 0.1, 1.0]
     # errors = epsilon_experiment(dataset, n, eps_values)
     # for i in range(len(eps_values)):
     #    print("eps = ", eps_values[i], " error = ", errors[i])
+    #
+    # print("*" * 50)
+    dataset = extract(dataset)
+    epsilon = 0.1
+    choice = most_visited_exponential(dataset,epsilon)
 
-    print("*" * 50)
-
-    # print ("**** EXPONENTIAL EXPERIMENT RESULTS ****")
-    # eps_values = [0.001, 0.005, 0.01, 0.03, 0.05, 0.1]
-    # exponential_experiment_result = exponential_experiment(dataset, eps_values)
-    # for i in range(len(eps_values)):
-    #    print("eps = ", eps_values[i], " accuracy = ", exponential_experiment_result[i])    
+    print ("**** EXPONENTIAL EXPERIMENT RESULTS ****")
+    eps_values = [0.001, 0.005, 0.01, 0.03, 0.05, 0.1]
+    exponential_experiment_result = exponential_experiment(dataset, eps_values)
+    for i in range(len(eps_values)):
+       print("eps = ", eps_values[i], " accuracy = ", exponential_experiment_result[i])
 
 
 if __name__ == "__main__":
