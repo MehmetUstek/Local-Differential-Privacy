@@ -56,8 +56,7 @@ def perturb_grr(val, epsilon):
     """
     d = len(DOMAIN)
     probability_of_truth = np.exp(epsilon) / (np.exp(epsilon) + d - 1)
-    random_val = random.randrange(0,1000) / 1000
-    if random_val <= probability_of_truth :
+    if random.random() <= probability_of_truth:
         return val
     else:
         domain_except_val = DOMAIN.copy()
@@ -83,10 +82,10 @@ def estimate_grr(perturbed_values, epsilon):
         counter[item] += 1
     # for item in perturbed_values:
     probability_of_truth = np.exp(epsilon) / (np.exp(epsilon) + d - 1)
-    probability_of_lie = 1 / (np.exp(epsilon) + d - 1)
+    probability_of_lie = 1 - probability_of_truth / (np.exp(epsilon) + d - 1)
     cv_list = []
-    for item in counter.items():
-        nv = counter[item[0]]
+    for item in DOMAIN:
+        nv = counter[item]
         Iv = probability_of_truth * nv + (total_n-nv) * probability_of_lie
         cv = (Iv - total_n * probability_of_lie) / (probability_of_truth - probability_of_lie)
         cv_list.append(cv)
@@ -112,13 +111,13 @@ def grr_experiment(dataset, epsilon):
         real_list.append(real_counter[item])
     perturbed_dataset = []
     for item in dataset:
-        perturbed_dataset.append(perturb_grr(item, 0.1))
+        perturbed_dataset.append(perturb_grr(item, epsilon))
     estimated_list = estimate_grr(perturbed_dataset,epsilon)
 
-    error = calculate_average_error(estimated_list, perturbed_dataset)
+    error = calculate_average_error(real_list, estimated_list)
     return error
 
-# TODO: Implement this function!
+
 def encode_rappor(val):
     """
         Encodes the given value into a bit vector.
@@ -128,9 +127,11 @@ def encode_rappor(val):
         Returns:
             The encoded bit vector as a list: [0, 1, ..., 0]
     """
-    pass
+    bitvector = [0] * 25
+    bitvector[val] = 1
+    return bitvector
 
-# TODO: Implement this function!
+
 def perturb_rappor(encoded_val, epsilon):
     """
         Perturbs the given bit vector using RAPPOR protocol.
@@ -141,7 +142,18 @@ def perturb_rappor(encoded_val, epsilon):
         Returns:
             Perturbed bit vector that the user reports to the server as a list: [1, 1, ..., 0]
     """
-    pass
+    preserve_bit_prob = np.exp(epsilon / 2) / (np.exp(epsilon/2) + 1)
+    flip_bit_prob = 1 / (np.exp(epsilon/2) + 1)
+    bit_iterator = 0
+    for bit in encoded_val:
+        if random.random() <= preserve_bit_prob:
+            bit_iterator += 1
+            continue
+        else:
+            encoded_val[bit_iterator] = int(not bit)
+            bit_iterator += 1
+    return encoded_val
+
 
 # TODO: Implement this function!
 def estimate_rappor(perturbed_values, epsilon):
@@ -155,7 +167,23 @@ def estimate_rappor(perturbed_values, epsilon):
             Estimated histogram as a list: [1.5, 6.7, ..., 1061.0] 
             for each hour in the domain [0, 1, ..., 24] respectively.
     """
-    pass
+    total_n = len(perturbed_values)
+    bit_counter = Counter()
+    for user in perturbed_values:
+        domain_iterator = 0
+        for bit in user:
+            if bit:
+                bit_counter[domain_iterator] += 1
+                domain_iterator += 1
+    probability_of_truth = np.exp(epsilon/2) / (np.exp(epsilon/2) + 1)
+    probability_of_lie = 1 / (np.exp(epsilon/2) + 1)
+    cv_list = []
+    for item in DOMAIN:
+        nv = bit_counter[item]
+        Iv = probability_of_truth * nv + (total_n - nv) * probability_of_lie
+        cv = (Iv - total_n * probability_of_lie) / (probability_of_truth - probability_of_lie)
+        cv_list.append(cv)
+    return cv_list
     
 # TODO: Implement this function!
 def rappor_experiment(dataset, epsilon):
@@ -168,7 +196,20 @@ def rappor_experiment(dataset, epsilon):
         Returns:
             Error of the estimated histogram (float) -> Ex: 330.78
     """
-    return 0.0
+    # real_counter = Counter()
+    # real_list = []
+    # for item in dataset:
+    #     real_counter[item] += 1
+    # for item in DOMAIN:
+    #     real_list.append(real_counter[item])
+    perturbed_dataset_rappor = []
+    for user_val in dataset:
+        encoded = encode_rappor(user_val)
+        perturbed_dataset_rappor.append(perturb_rappor(encoded,epsilon))
+    estimated_list = estimate_rappor(perturbed_dataset_rappor,epsilon=epsilon)
+    # error = calculate_average_error(real_list, estimated_list)
+    # return error
+    pass
 
 def main():
     dataset = read_dataset("daily_time.txt")
@@ -176,13 +217,19 @@ def main():
     for item in dataset:
         perturbed_dataset.append(perturb_grr(item,4.0))
 
-    print("GRR EXPERIMENT")
-    #for epsilon in [20.0]: 
-    for epsilon in [0.1, 0.5, 1.0, 2.0, 4.0, 6.0]: 
-        error = grr_experiment(dataset, epsilon)
-        print("e={}, Error: {:.2f}".format(epsilon, error))
+    # print("GRR EXPERIMENT")
+    # #for epsilon in [20.0]:
+    # for epsilon in [0.1, 0.5, 1.0, 2.0, 4.0, 6.0]:
+    #     error = grr_experiment(dataset, epsilon)
+    #     print("e={}, Error: {:.2f}".format(epsilon, error))
 
-    print("*" * 50)
+    # print("*" * 50)
+    epsilon = 0.01
+    perturbed_dataset_rappor = []
+    for user_val in dataset:
+        encoded = encode_rappor(user_val)
+        perturbed_dataset_rappor.append(perturb_rappor(encoded,epsilon))
+    cv_list = estimate_rappor(perturbed_dataset_rappor,epsilon=epsilon)
     print("RAPPOR EXPERIMENT")
     for epsilon in [0.1, 0.5, 1.0, 2.0, 4.0, 6.0]:
         error = rappor_experiment(dataset, epsilon)
