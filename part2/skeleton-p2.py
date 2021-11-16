@@ -326,9 +326,11 @@ def main():
     #    print("eps = ", eps_values[i], " error = ", errors[i])
     #
     # print("*" * 50)
-    dataset = extract(dataset)
-    epsilon = 0.1
-    choice = most_visited_exponential(dataset,epsilon)
+
+
+    # dataset = extract(dataset)
+    # epsilon = 0.1
+    # choice = most_visited_exponential(dataset,epsilon)
 
     print ("**** EXPONENTIAL EXPERIMENT RESULTS ****")
     eps_values = [0.001, 0.005, 0.01, 0.03, 0.05, 0.1]
