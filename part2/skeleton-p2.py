@@ -6,16 +6,38 @@ import math
 import random
 
 ''' Globals '''
-LABELS = ["", "frontpage", "news", "tech", "local", "opinion", "on-air", "misc", "weather", "msn-news", "health", "living", "business", "msn-sports", "sports", "summary", "bbs", "travel"]
+LABELS = ["", "frontpage", "news", "tech", "local", "opinion", "on-air", "misc", "weather", "msn-news", "health",
+          "living", "business", "msn-sports", "sports", "summary", "bbs", "travel"]
+
 
 def laplace_noise(x, scale):
     exp_eq = np.exp(- x / scale)
-    return 1.0/(2.0 * scale) * exp_eq
+    return 1.0 / (2.0 * scale) * exp_eq
+
+def average_limit_of_truncation(dataset):
+    """
+            Takes the histogram data, returns the average length of records. To appoint the optimal value for truncation.
+
+            Args:
+                dataset (list of lists): The MSNBC dataset
+
+            Returns:
+                Average length of records rounded to the nearest integer.
+        """
+    length_list = []
+    for item in dataset:
+        length_list.append(len(item))
+
+    average = sum(length_list) / len(length_list)
+    average = int(round(average))
+    return average
 
 """ 
     Helper functions
     (You can define your helper functions here.)
 """
+
+
 def read_dataset(filename):
     """
         Reads the dataset with given filename.
@@ -41,6 +63,7 @@ def read_dataset(filename):
 
 ''' Functions to implement '''
 
+
 def get_histogram(dataset: list):
     """
         Creates a histogram of given counts for each category and saves it to a file.
@@ -57,9 +80,9 @@ def get_histogram(dataset: list):
         for element in row:
             counter[LABELS[element]] += 1
 
-    plt.bar(counter.keys(),counter.values())
+    plt.bar(counter.keys(), counter.values())
     plt.ylabel('Counts')
-    plt.xticks(rotation='vertical', ha= 'center', va='center',wrap=True)
+    plt.xticks(rotation='vertical', ha='center', va='center', wrap=True)
     # plt.show()
     list = []
     for item in counter.values():
@@ -82,9 +105,12 @@ def add_laplace_noise(real_answer: list, sensitivity: float, epsilon: float):
     """
     scale = sensitivity / epsilon
     noisy_answer = []
+
     for item in real_answer:
-        noise = laplace_noise(item, scale)
-        noisy_answer.append(item + noise)
+        # noise = laplace_noise(item, scale)
+        # noise = np.random.laplace(scale=scale)
+        sample = np.random.default_rng().laplace(loc=0, scale=scale)
+        noisy_answer.append(item + sample)
 
     return noisy_answer
 
@@ -105,7 +131,6 @@ def truncate(dataset: list, n: int):
     return truncated_dataset
 
 
-# TODO: Implement this function!
 def get_dp_histogram(dataset: list, n: int, epsilon: float):
     """
         Truncates dataset with parameter n and calculates differentially private histogram.
@@ -117,11 +142,22 @@ def get_dp_histogram(dataset: list, n: int, epsilon: float):
         Returns:
             Differentially private histogram as a list
     """
-    truncated_dataset = truncate(dataset,n)
+    truncated_dataset = truncate(dataset, n)
+    counter = Counter()
+    for row in dataset:
+        for element in row:
+            counter[LABELS[element]] += 1
+    list = []
+    for item in counter.values():
+        list.append(item)
+    noisy_hist = add_laplace_noise(list, 1.0, epsilon)
+    plt.bar(counter.keys(), noisy_hist)
+    plt.ylabel('Counts')
+    plt.xticks(rotation='vertical', ha='center', va='center', wrap=True)
+    # plt.show()
+    return noisy_hist
 
 
-
-# TODO: Implement this function!
 def calculate_average_error(actual_hist, noisy_hist):
     """
         Calculates error according to the equation stated in part (e).
@@ -129,7 +165,12 @@ def calculate_average_error(actual_hist, noisy_hist):
         Args: Actual histogram (list), Noisy histogram (list)
         Returns: Error (Err) in the noisy histogram (float)
     """
-    pass
+    error = 0.0
+    for i in range(len(actual_hist)):
+        error += abs(actual_hist[i] - noisy_hist[i])
+
+    error = error / len(actual_hist)
+    return error
 
 
 # TODO: Implement this function!
@@ -140,7 +181,20 @@ def n_experiment(dataset, n_values: list, epsilon: float):
         Returns the errors as a list: [1256.6, 1653.5, ...] such that 1256.5 is the error when n=1,
         1653.5 is the error when n = 6, and so forth.
     """
-    return []
+    total_errors = []
+    non_private_histogram = get_histogram(dataset)
+    for n in n_values:
+        error_list = []
+        for _ in range(30):
+            dp_histogram = get_dp_histogram(dataset, n, epsilon)
+            av_error = calculate_average_error(non_private_histogram, dp_histogram)
+            error_list.append(av_error)
+
+        total_average_error = sum(error_list) / len(error_list)
+        error_list = []
+        total_errors.append(total_average_error)
+
+    return total_errors
 
 
 # TODO: Implement this function!
@@ -197,32 +251,38 @@ def main():
     non_private_histogram = get_histogram(dataset)
     print("Non private histogram:", non_private_histogram)
     # noisy_answer = add_laplace_noise(non_private_histogram, 1000.0, 0.0001)
-    truncate(dataset,5)
-    
-    #print("**** N EXPERIMENT RESULTS (f of Part 2) ****")
-    #eps = 0.01
-    #n_values = []
-    #for i in range(1, 106, 5):
-    #    n_values.append(i)
-    #errors = n_experiment(dataset, n_values, eps)
-    #for i in range(len(n_values)):
-    #    print("n = ", n_values[i], " error = ", errors[i])   
-    
+    # truncated_dataset = truncate(dataset,5)
+    calculated_trancation_parameter = average_limit_of_truncation(dataset)
+    # calculated_trancation_parameter = int(round(calculated_trancation_parameter))
+    dp_histogram = get_dp_histogram(dataset, calculated_trancation_parameter, 0.01)
+    print("DP histogram:", dp_histogram)
+    av_error = calculate_average_error(non_private_histogram, dp_histogram)
+    print("Average error:", av_error)
+
+    print("**** N EXPERIMENT RESULTS (f of Part 2) ****")
+    eps = 0.01
+    n_values = []
+    for i in range(1, 106, 5):
+       n_values.append(i)
+    errors = n_experiment(dataset, n_values, eps)
+    for i in range(len(n_values)):
+       print("n = ", n_values[i], " error = ", errors[i])
+
     print("*" * 50)
 
-    #print("**** EPSILON EXPERIMENT RESULTS (g of Part 2) ****")    
-    #n = 50
-    #eps_values = [0.0001, 0.001, 0.005, 0.01, 0.05, 0.1, 1.0]
-    #errors = epsilon_experiment(dataset, n, eps_values)
-    #for i in range(len(eps_values)):
+    # print("**** EPSILON EXPERIMENT RESULTS (g of Part 2) ****")
+    # n = 50
+    # eps_values = [0.0001, 0.001, 0.005, 0.01, 0.05, 0.1, 1.0]
+    # errors = epsilon_experiment(dataset, n, eps_values)
+    # for i in range(len(eps_values)):
     #    print("eps = ", eps_values[i], " error = ", errors[i])
-    
+
     print("*" * 50)
 
-    #print ("**** EXPONENTIAL EXPERIMENT RESULTS ****")
-    #eps_values = [0.001, 0.005, 0.01, 0.03, 0.05, 0.1]
-    #exponential_experiment_result = exponential_experiment(dataset, eps_values)
-    #for i in range(len(eps_values)):
+    # print ("**** EXPONENTIAL EXPERIMENT RESULTS ****")
+    # eps_values = [0.001, 0.005, 0.01, 0.03, 0.05, 0.1]
+    # exponential_experiment_result = exponential_experiment(dataset, eps_values)
+    # for i in range(len(eps_values)):
     #    print("eps = ", eps_values[i], " accuracy = ", exponential_experiment_result[i])    
 
 
