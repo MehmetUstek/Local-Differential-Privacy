@@ -1,3 +1,5 @@
+from collections import Counter
+
 import matplotlib.pyplot as plt
 import numpy as np
 import math
@@ -6,6 +8,9 @@ import random
 ''' Globals '''
 LABELS = ["", "frontpage", "news", "tech", "local", "opinion", "on-air", "misc", "weather", "msn-news", "health", "living", "business", "msn-sports", "sports", "summary", "bbs", "travel"]
 
+def laplace_noise(x, scale):
+    exp_eq = np.exp(- x / scale)
+    return 1.0/(2.0 * scale) * exp_eq
 
 """ 
     Helper functions
@@ -36,7 +41,6 @@ def read_dataset(filename):
 
 ''' Functions to implement '''
 
-# TODO: Implement this function!
 def get_histogram(dataset: list):
     """
         Creates a histogram of given counts for each category and saves it to a file.
@@ -48,10 +52,22 @@ def get_histogram(dataset: list):
             Ordered list of counts for each page category (frontpage, news, tech, ..., travel)
             Ex: [123, 383, 541, ..., 915]
     """
-    pass
+    counter = Counter()
+    for row in dataset:
+        for element in row:
+            counter[LABELS[element]] += 1
+
+    plt.bar(counter.keys(),counter.values())
+    plt.ylabel('Counts')
+    plt.xticks(rotation='vertical', ha= 'center', va='center',wrap=True)
+    # plt.show()
+    list = []
+    for item in counter.values():
+        list.append(item)
+
+    return list
 
 
-# TODO: Implement this function!
 def add_laplace_noise(real_answer: list, sensitivity: float, epsilon: float):
     """
         Adds laplace noise to query's real answers.
@@ -64,10 +80,15 @@ def add_laplace_noise(real_answer: list, sensitivity: float, epsilon: float):
             Noisy answers as a list.
             Ex: [103.6, 61.8, 17.0, ..., 19.62]
     """
-    pass
+    scale = sensitivity / epsilon
+    noisy_answer = []
+    for item in real_answer:
+        noise = laplace_noise(item, scale)
+        noisy_answer.append(item + noise)
+
+    return noisy_answer
 
 
-# TODO: Implement this function!
 def truncate(dataset: list, n: int):
     """
         Truncates dataset according to truncation parameter n.
@@ -78,7 +99,10 @@ def truncate(dataset: list, n: int):
         Returns:
             truncated_dataset: truncated version of original dataset
     """
-    pass
+    truncated_dataset = []
+    for item in dataset:
+        truncated_dataset.append(item[:n])
+    return truncated_dataset
 
 
 # TODO: Implement this function!
@@ -93,7 +117,8 @@ def get_dp_histogram(dataset: list, n: int, epsilon: float):
         Returns:
             Differentially private histogram as a list
     """
-    pass
+    truncated_dataset = truncate(dataset,n)
+
 
 
 # TODO: Implement this function!
@@ -169,8 +194,10 @@ def main():
     dataset_filename = "msnbc.dat"
     dataset = read_dataset(dataset_filename)
 
-    #non_private_histogram = get_histogram(dataset)
-    #print("Non private histogram:", non_private_histogram)
+    non_private_histogram = get_histogram(dataset)
+    print("Non private histogram:", non_private_histogram)
+    # noisy_answer = add_laplace_noise(non_private_histogram, 1000.0, 0.0001)
+    truncate(dataset,5)
     
     #print("**** N EXPERIMENT RESULTS (f of Part 2) ****")
     #eps = 0.01
