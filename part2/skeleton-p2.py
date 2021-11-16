@@ -144,16 +144,17 @@ def get_dp_histogram(dataset: list, n: int, epsilon: float):
     """
     truncated_dataset = truncate(dataset, n)
     counter = Counter()
-    for row in dataset:
+
+    for row in truncated_dataset:
         for element in row:
             counter[LABELS[element]] += 1
     list = []
     for item in counter.values():
         list.append(item)
     noisy_hist = add_laplace_noise(list, 1.0, epsilon)
-    plt.bar(counter.keys(), noisy_hist)
-    plt.ylabel('Counts')
-    plt.xticks(rotation='vertical', ha='center', va='center', wrap=True)
+    # plt.bar(counter.keys(), noisy_hist)
+    # plt.ylabel('Counts')
+    # plt.xticks(rotation='vertical', ha='center', va='center', wrap=True)
     # plt.show()
     return noisy_hist
 
@@ -173,7 +174,6 @@ def calculate_average_error(actual_hist, noisy_hist):
     return error
 
 
-# TODO: Implement this function!
 def n_experiment(dataset, n_values: list, epsilon: float):
     """
         Function for the experiment explained in part (f).
@@ -191,13 +191,12 @@ def n_experiment(dataset, n_values: list, epsilon: float):
             error_list.append(av_error)
 
         total_average_error = sum(error_list) / len(error_list)
-        error_list = []
+
         total_errors.append(total_average_error)
 
     return total_errors
 
 
-# TODO: Implement this function!
 def epsilon_experiment(dataset, n: int, eps_values: list):
     """
         Function for the experiment explained in part (g).
@@ -205,6 +204,18 @@ def epsilon_experiment(dataset, n: int, eps_values: list):
         Returns the errors as a list: [9786.5, 1234.5, ...] such that 9786.5 is the error when eps = 0.0001,
         1234.5 is the error when eps = 0.001, and so forth.
     """
+    total_errors = []
+    non_private_histogram = get_histogram(dataset)
+    for epsilon in eps_values:
+        error_list = []
+        for _ in range(30):
+            dp_histogram = get_dp_histogram(dataset, n, epsilon)
+            av_error = calculate_average_error(non_private_histogram, dp_histogram)
+            error_list.append(av_error)
+
+        total_average_error = sum(error_list) / len(error_list)
+
+        total_errors.append(total_average_error)
     return []
 
 
@@ -245,7 +256,7 @@ def exponential_experiment(dataset, eps_values: list):
 # FUNCTIONS TO IMPLEMENT END #
 
 def main():
-    dataset_filename = "msnbc.dat"
+    dataset_filename = "msnbc_cpy.dat"
     dataset = read_dataset(dataset_filename)
 
     non_private_histogram = get_histogram(dataset)
