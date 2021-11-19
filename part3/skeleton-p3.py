@@ -87,11 +87,15 @@ def estimate_grr(perturbed_values, epsilon):
         counter[item] += 1
     # for item in perturbed_values:
     probability_of_truth = np.exp(epsilon) / (np.exp(epsilon) + d - 1)
-    probability_of_lie = 1 - probability_of_truth / (np.exp(epsilon) + d - 1)
+    probability_of_lie = (1 - probability_of_truth) / (np.exp(epsilon) + d - 1)
     cv_list = []
     for item in DOMAIN:
-        nv = counter[item]
-        Iv = probability_of_truth * nv + (total_n - nv) * probability_of_lie
+        if counter[item]:
+            nv = counter[item]
+        else:
+            nv = 0
+        # Iv = probability_of_truth * nv + (total_n - nv) * probability_of_lie
+        Iv = nv
         cv = (Iv - total_n * probability_of_lie) / (probability_of_truth - probability_of_lie)
         cv_list.append(cv)
     return cv_list
@@ -150,7 +154,8 @@ def perturb_rappor(encoded_val, epsilon):
     flip_bit_prob = 1 / (np.exp(epsilon / 2) + 1)
     bit_iterator = 0
     for bit in encoded_val:
-        if random.random() <= preserve_bit_prob:
+        random_val = random.random()
+        if random_val <= preserve_bit_prob:
             bit_iterator += 1
             continue
         else:
@@ -170,6 +175,8 @@ def estimate_rappor(perturbed_values, epsilon):
             Estimated histogram as a list: [1.5, 6.7, ..., 1061.0] 
             for each hour in the domain [0, 1, ..., 24] respectively.
     """
+    # lst = [x[0] for x in perturbed_values]
+    # print(sum(lst))
     total_n = len(perturbed_values)
     bit_counter = Counter()
     for user in perturbed_values:
@@ -183,12 +190,13 @@ def estimate_rappor(perturbed_values, epsilon):
     probability_of_truth = np.exp(epsilon / 2) / (np.exp(epsilon / 2) + 1)
     probability_of_lie = 1 / (np.exp(epsilon / 2) + 1)
     cv_list = []
+    # TODO: Problem is definitely this function.
     for item in DOMAIN:
         if bit_counter[item]:
             nv = bit_counter[item]
         else:
             nv = 0
-        Iv = probability_of_truth * nv + (total_n - nv) * probability_of_lie
+        Iv = nv
         cv = (Iv - total_n * probability_of_lie) / (probability_of_truth - probability_of_lie)
         cv_list.append(cv)
     return cv_list
@@ -223,12 +231,29 @@ def rappor_experiment(dataset, epsilon):
 
 def main():
     dataset = read_dataset("daily_time.txt")
+    # perturbed_dataset = []
+    # for item in dataset:
+    #     perturbed_dataset.append(perturb_grr(item, 4.0))
 
+    # print("GRR EXPERIMENT")
+    # #for epsilon in [20.0]:
+    # for epsilon in [0.1, 0.5, 1.0, 2.0, 4.0, 6.0]:
+    #     error = grr_experiment(dataset, epsilon)
+    #     print("e={}, Error: {:.2f}".format(epsilon, error))
+
+    # print("*" * 50)
+    # print(" part-g RAPPOR EXPERIMENT with epsilon = 10.0")
+    # epsilon_rappor = 10.0
+    # error = rappor_experiment(dataset, epsilon_rappor)
+    # print("e={}, Error: {:.2f}".format(epsilon_rappor, error))
+    # print("*" * 50)
     print("GRR EXPERIMENT")
     for epsilon in [0.1, 0.5, 1.0, 2.0, 4.0, 6.0]:
         error = grr_experiment(dataset, epsilon)
         print("e={}, Error: {:.2f}".format(epsilon, error))
+
     print("*" * 50)
+
     print("RAPPOR EXPERIMENT")
     for epsilon in [0.1, 0.5, 1.0, 2.0, 4.0, 6.0]:
         error = rappor_experiment(dataset, epsilon)
