@@ -151,7 +151,7 @@ def perturb_rappor(encoded_val, epsilon):
             Perturbed bit vector that the user reports to the server as a list: [1, 1, ..., 0]
     """
     preserve_bit_prob = np.exp(epsilon / 2) / (np.exp(epsilon / 2) + 1)
-    flip_bit_prob = 1 / (np.exp(epsilon / 2) + 1)
+    # flip_bit_prob = 1 / (np.exp(epsilon / 2) + 1)
     bit_iterator = 0
     for bit in encoded_val:
         random_val = random.random()
@@ -235,18 +235,18 @@ def main():
     # for item in dataset:
     #     perturbed_dataset.append(perturb_grr(item, 4.0))
 
-    # print("GRR EXPERIMENT")
-    # #for epsilon in [20.0]:
-    # for epsilon in [0.1, 0.5, 1.0, 2.0, 4.0, 6.0]:
-    #     error = grr_experiment(dataset, epsilon)
-    #     print("e={}, Error: {:.2f}".format(epsilon, error))
+    print("GRR EXPERIMENT")
+    #for epsilon in [20.0]:
+    for epsilon in [0.1, 0.5, 1.0, 2.0, 4.0, 6.0]:
+        error = grr_experiment(dataset, epsilon)
+        print("e={}, Error: {:.2f}".format(epsilon, error))
 
-    # print("*" * 50)
-    # print(" part-g RAPPOR EXPERIMENT with epsilon = 10.0")
-    # epsilon_rappor = 10.0
-    # error = rappor_experiment(dataset, epsilon_rappor)
-    # print("e={}, Error: {:.2f}".format(epsilon_rappor, error))
-    # print("*" * 50)
+    print("*" * 50)
+    print(" part-g RAPPOR EXPERIMENT with epsilon = 10.0")
+    epsilon_rappor = 10.0
+    error = rappor_experiment(dataset, epsilon_rappor)
+    print("e={}, Error: {:.2f}".format(epsilon_rappor, error))
+    print("*" * 50)
     print("GRR EXPERIMENT")
     for epsilon in [0.1, 0.5, 1.0, 2.0, 4.0, 6.0]:
         error = grr_experiment(dataset, epsilon)

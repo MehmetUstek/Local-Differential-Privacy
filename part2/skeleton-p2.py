@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import math
 import random
+import timeit
 
 ''' Globals '''
 LABELS = ["", "frontpage", "news", "tech", "local", "opinion", "on-air", "misc", "weather", "msn-news", "health",
@@ -80,9 +81,10 @@ def get_histogram(dataset: list):
         for element in row:
             counter[LABELS[element]] += 1
 
-    plt.bar(counter.keys(), counter.values())
-    plt.ylabel('Counts')
-    plt.xticks(rotation='vertical', ha='center', va='center', wrap=True)
+    # plt.bar(counter.keys(), counter.values())
+    # plt.ylabel('Counts')
+    # plt.xticks(rotation='vertical', ha='center', va='center', wrap=True)
+    # plt.savefig("np-histogram.png")
     # plt.show()
     list = []
     for item in counter.values():
@@ -155,7 +157,10 @@ def get_dp_histogram(dataset: list, n: int, epsilon: float):
     # plt.bar(counter.keys(), noisy_hist)
     # plt.ylabel('Counts')
     # plt.xticks(rotation='vertical', ha='center', va='center', wrap=True)
+    # plt.savefig("dp-histogram.png")
     # plt.show()
+
+
     return noisy_hist
 
 
@@ -181,9 +186,11 @@ def n_experiment(dataset, n_values: list, epsilon: float):
         Returns the errors as a list: [1256.6, 1653.5, ...] such that 1256.5 is the error when n=1,
         1653.5 is the error when n = 6, and so forth.
     """
+    # timer_list = []
     total_errors = []
     non_private_histogram = get_histogram(dataset)
     for n in n_values:
+        # start = timeit.default_timer()
         error_list = []
         for _ in range(30):
             dp_histogram = get_dp_histogram(dataset, n, epsilon)
@@ -193,6 +200,9 @@ def n_experiment(dataset, n_values: list, epsilon: float):
         total_average_error = sum(error_list) / len(error_list)
 
         total_errors.append(total_average_error)
+        # Timers
+        # stop = timeit.default_timer()
+        # timer_list.append(stop-start)
 
     return total_errors
 
@@ -204,9 +214,11 @@ def epsilon_experiment(dataset, n: int, eps_values: list):
         Returns the errors as a list: [9786.5, 1234.5, ...] such that 9786.5 is the error when eps = 0.0001,
         1234.5 is the error when eps = 0.001, and so forth.
     """
+    timer_list = []
     total_errors = []
     non_private_histogram = get_histogram(dataset)
     for epsilon in eps_values:
+        start = timeit.default_timer()
         error_list = []
         for _ in range(30):
             dp_histogram = get_dp_histogram(dataset, n, epsilon)
@@ -216,7 +228,9 @@ def epsilon_experiment(dataset, n: int, eps_values: list):
         total_average_error = sum(error_list) / len(error_list)
 
         total_errors.append(total_average_error)
-    return total_errors
+        stop = timeit.default_timer()
+        timer_list.append(stop-start)
+    return total_errors, timer_list
 
 
 # FUNCTIONS FOR LAPLACE END #
@@ -268,6 +282,8 @@ def exponential_experiment(dataset, eps_values: list):
         Returns the list of accuracy results [0.51, 0.78, ...] where 0.51 is the accuracy when eps = 0.001,
         0.78 is the accuracy when eps = 0.005, and so forth.
     """
+    dataset = extract(dataset)
+
     score = Counter()
     for row in dataset:
         for element in row:
@@ -292,16 +308,13 @@ def exponential_experiment(dataset, eps_values: list):
 # FUNCTIONS TO IMPLEMENT END #
 
 def main():
-    #TODO: Change file name.
-    dataset_filename = "msnbc_cpy.dat"
+    dataset_filename = "msnbc.dat"
     dataset = read_dataset(dataset_filename)
 
+    # Parts A, B, C, D, E
     non_private_histogram = get_histogram(dataset)
     print("Non private histogram:", non_private_histogram)
-    # noisy_answer = add_laplace_noise(non_private_histogram, 1000.0, 0.0001)
-    # truncated_dataset = truncate(dataset,5)
     calculated_trancation_parameter = average_limit_of_truncation(dataset)
-    # calculated_trancation_parameter = int(round(calculated_trancation_parameter))
     dp_histogram = get_dp_histogram(dataset, calculated_trancation_parameter, 0.01)
     print("DP histogram:", dp_histogram)
     av_error = calculate_average_error(non_private_histogram, dp_histogram)
@@ -317,27 +330,64 @@ def main():
     #    print("n = ", n_values[i], " error = ", errors[i])
     #
     # print("*" * 50)
-    #
+
+    ####### Analysis Of N values ########
+    # For N vs Err Analysis
+    # plt.plot(n_values, errors)
+    # plt.ylabel('Errors')
+    # plt.xlabel('N values')
+    # plt.savefig("NvsErr_plot.png")
+    # plt.show()
+
+    # For N vs Computational Time Analysis
+    # plt.plot(n_values, timer_list)
+    # plt.ylabel('Computational Time')
+    # plt.xlabel('N values')
+    # plt.savefig("NvsComputationalTime_plot.png")
+    # plt.show()
+    ####### Analysis ########
+
+
     # print("**** EPSILON EXPERIMENT RESULTS (g of Part 2) ****")
     # n = 50
     # eps_values = [0.0001, 0.001, 0.005, 0.01, 0.05, 0.1, 1.0]
-    # errors = epsilon_experiment(dataset, n, eps_values)
+    # errors, timer_list = epsilon_experiment(dataset, n, eps_values)
     # for i in range(len(eps_values)):
     #    print("eps = ", eps_values[i], " error = ", errors[i])
     #
     # print("*" * 50)
 
+    ####### Analysis Of N values ########
+    # For Eps vs Err Analysis for epsilon exp.
+    # plt.plot(eps_values, errors)
+    # plt.ylabel('Errors')
+    # plt.xlabel('Eps values')
+    # plt.savefig("EpsvsErr_plot_.png")
+    # plt.show()
+    #
+    # # For N vs Computational Time Analysis
+    # plt.plot(eps_values, timer_list)
+    # plt.ylabel('Computational Time')
+    # plt.xlabel('Eps values')
+    # plt.savefig("EpsvsComputationalTime_plot.png")
+    # plt.show()
+    ####### Analysis ########
 
-    # dataset = extract(dataset)
-    # epsilon = 0.1
-    # choice = most_visited_exponential(dataset,epsilon)
 
-    print ("**** EXPONENTIAL EXPERIMENT RESULTS ****")
-    eps_values = [0.001, 0.005, 0.01, 0.03, 0.05, 0.1]
-    exponential_experiment_result = exponential_experiment(dataset, eps_values)
-    for i in range(len(eps_values)):
-       print("eps = ", eps_values[i], " accuracy = ", exponential_experiment_result[i])
+    # print ("**** EXPONENTIAL EXPERIMENT RESULTS ****")
+    # eps_values = [0.001, 0.005, 0.01, 0.03, 0.05, 0.1]
+    # exponential_experiment_result = exponential_experiment(dataset, eps_values)
+    # for i in range(len(eps_values)):
+    #    print("eps = ", eps_values[i], " accuracy = ", exponential_experiment_result[i])
 
+    ####### Analysis Of N values ########
+    # For Eps vs Accuracy Analysis for exponential exp.
+    # plt.plot(eps_values, exponential_experiment_result)
+    # plt.ylabel('Accuracy')
+    # plt.xlabel('Eps values')
+    # plt.savefig("EpsvsAccuracy_plot_.png")
+    # plt.show()
+    ####### Analysis ########
 
 if __name__ == "__main__":
     main()
